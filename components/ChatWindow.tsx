@@ -136,11 +136,11 @@ export default function ChatWindow() {
                 {msg.products.map((p: any) => (
                   <ProductCard key={p.id} product={{ 
                     id: p.id, 
-                    name: p.name, 
+                    name: p.name || p.product_name, 
                     price: p.price, 
                     rating: p.rating, 
-                    reviewCount: p.reviewCount || p.reviewCount || 0,
-                    reason: p.reason,
+                    reviewCount: p.reviewCount || p.reviewCount || p.review_count || 0,
+                    reason: p.reason || p.reasoning,
                     image: p.image 
                   }} onBuy={handleBuy} />
                 ))}
