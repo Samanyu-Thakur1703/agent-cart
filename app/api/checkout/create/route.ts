@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+export async function GET() {
+  return NextResponse.json({
+    status: 'Checkout API is running',
+    hasApiKey: !!process.env.LOCUS_API_KEY,
+    apiBase: process.env.LOCUS_API_BASE_URL || 'not set',
+    timestamp: new Date().toISOString(),
+  });
+}
+
 export async function POST(request: NextRequest) {
   try {
     console.log('Checkout API called');
@@ -18,16 +27,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { productId, reasoning } = body;
+    // Safely parse JSON body
+    let body;
+    try {
+      body = await request.json();
+    } catch (jsonError: any) {
+      console.error('JSON parse error:', jsonError);
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+    }
 
+    const { productId, reasoning } = body;
     console.log('Request body:', body);
 
     if (!productId) {
       return NextResponse.json({ error: 'Product ID is required' }, { status: 400 });
     }
 
-    // Mock product lookup (since DB might not work in production)
+    // Mock product lookup
     const mockProducts: any = {
       '1': { id: '1', name: 'Anker USB-C Hub 7-in-1', price: 28.99 },
       '2': { id: '2', name: 'Baseus 8-Port USB-C Dock', price: 35.99 },
@@ -38,7 +54,7 @@ export async function POST(request: NextRequest) {
     console.log('Product found:', product);
 
     // Create Locus checkout session
-    console.log('Creating Locus session with API key:', apiKey.substring(0, 10) + '...');
+    console.log('Creating Locus session...');
     
     const sessionRes = await fetch(`${apiBase}/checkout/sessions`, {
       method: 'POST',
@@ -61,7 +77,7 @@ export async function POST(request: NextRequest) {
       const errorText = await sessionRes.text();
       console.error('Locus API error:', errorText);
       return NextResponse.json(
-        { error: `Payment provider error: ${sessionRes.status} - ${errorText.substring(0, 100)}` },
+        { error: `Payment provider error: ${sessionRes.status}` },
         { status: 502 }
       );
     }
