@@ -5,24 +5,28 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   return NextResponse.json({
     status: 'running',
-    env: {
-      hasApiKey: !!process.env.LOCUS_API_KEY,
-      apiBase: process.env.LOCUS_API_BASE_URL,
-    }
+    hasApiKey: !!process.env.LOCUS_API_KEY,
+    apiBase: process.env.LOCUS_API_BASE_URL,
   });
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Just return success without reading body
+    const body = await request.json();
+    const { productId } = body;
+
+    if (!productId) {
+      return NextResponse.json({ error: 'productId required' }, { status: 400 });
+    }
+
     return NextResponse.json({
-      success: true,
-      message: 'Checkout endpoint working',
-      timestamp: new Date().toISOString(),
+      sessionId: 'sess_' + Date.now(),
+      product: { id: productId, name: 'Test Product', price: 29.99 },
     });
   } catch (error: any) {
+    console.error('Checkout error:', error);
     return NextResponse.json(
-      { error: error.message },
+      { error: error.message || 'Server error' },
       { status: 500 }
     );
   }
