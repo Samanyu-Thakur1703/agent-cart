@@ -56,40 +56,57 @@ export async function POST(request: NextRequest) {
     // Create Locus checkout session
     console.log('Creating Locus session...');
     
-    const sessionRes = await fetch(`${apiBase}/checkout/sessions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        amount: Math.round(product.price * 1000000), // USDC 6 decimals
-        description: product.name,
-        receiptConfig: {
-          lineItems: [{ name: product.name, amount: Math.round(product.price * 1000000) }],
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+      
+      const sessionRes = await fetch(`${apiBase}/checkout/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
         },
-      }),
-    });
+        body: JSON.stringify({
+          amount: Math.round(product.price * 1000000), // USDC 6 decimals
+          description: product.name,
+          receiptConfig: {
+            lineItems: [{ name: product.name, amount: Math.round(product.price * 1000000) }],
+          },
+        }),
+        signal: controller.signal,
+      });
 
-    console.log('Locus API response status:', sessionRes.status);
-    
-    if (!sessionRes.ok) {
-      const errorText = await sessionRes.text();
-      console.error('Locus API error:', errorText);
-      return NextResponse.json(
-        { error: `Payment provider error: ${sessionRes.status}` },
-        { status: 502 }
-      );
+      clearTimeout(timeout);
+
+      console.log('Locus API response status:', sessionRes.status);
+      
+      if (!sessionRes.ok) {
+        const errorText = await sessionRes.text();
+        console.error('Locus API error:', errorText);
+        return NextResponse.json(
+          { error: `Payment provider error: ${sessionRes.status}` },
+          { status: 502 }
+        );
+      }
+
+      const session = await sessionRes.json();
+      console.log('Session created:', session.id);
+
+      return NextResponse.json({
+        sessionId: session.id,
+        session,
+        product,
+      });
+    } catch (fetchError: any) {
+      console.error('Fetch error:', fetchError);
+      if (fetchError.name === 'AbortError') {
+        return NextResponse.json(
+          { error: 'Payment provider timeout' },
+          { status: 504 }
+        );
+      }
+      throw fetchError;
     }
-
-    const session = await sessionRes.json();
-    console.log('Session created:', session.id);
-
-    return NextResponse.json({
-      sessionId: session.id,
-      session,
-      product,
-    });
   } catch (error: any) {
     console.error('Checkout create error:', error);
     return NextResponse.json(
