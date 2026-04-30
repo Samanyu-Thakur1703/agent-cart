@@ -4,18 +4,20 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   return NextResponse.json({
-    status: 'Checkout API is running',
-    hasApiKey: !!process.env.LOCUS_API_KEY,
-    timestamp: new Date().toISOString(),
+    status: 'running',
+    env: {
+      hasApiKey: !!process.env.LOCUS_API_KEY,
+      apiBase: process.env.LOCUS_API_BASE_URL,
+    }
   });
 }
 
 export async function POST(request: NextRequest) {
   try {
-    // Just return success without reading body for now
+    // Just return success without reading body
     return NextResponse.json({
       success: true,
-      message: 'Checkout endpoint reached',
+      message: 'Checkout endpoint working',
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
