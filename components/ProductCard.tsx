@@ -28,7 +28,7 @@ export default function ProductCard({ product, onBuy, loading }: ProductCardProp
           <p className="text-2xl font-bold text-green-600">${product.price.toFixed(2)}</p>
           <div className="flex items-center gap-2 mt-1">
             <span className="text-yellow-500">★ {product.rating}</span>
-            <span className="text-gray-500 text-sm">({product.reviewCount} reviews)</span>
+            <span className="text-gray-500 text-sm">({product.reviewCount || product.reviewCount} reviews)</span>
           </div>
           {product.reason && (
             <p className="text-sm text-gray-600 mt-2 italic">"{product.reason}"</p>

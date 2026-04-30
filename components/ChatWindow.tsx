@@ -134,7 +134,15 @@ export default function ChatWindow() {
             {msg.products && msg.products.length > 0 && (
               <div className="ml-4 space-y-3 mb-4">
                 {msg.products.map((p: any) => (
-                  <ProductCard key={p.id} product={p} onBuy={handleBuy} />
+                  <ProductCard key={p.id} product={{ 
+                    id: p.id, 
+                    name: p.name, 
+                    price: p.price, 
+                    rating: p.rating, 
+                    reviewCount: p.reviewCount || p.reviewCount || 0,
+                    reason: p.reason,
+                    image: p.image 
+                  }} onBuy={handleBuy} />
                 ))}
               </div>
             )}

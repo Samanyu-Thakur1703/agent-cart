@@ -52,21 +52,44 @@ export async function rankProducts(
   query: ProductQuery,
   products: any[]
 ): Promise<ProductRecommendation[]> {
-  const completion = await openai.chat.completions.create({
-    model: 'openrouter/free',
-    messages: [
-      {
-        role: 'system',
-        content: `You are a shopping assistant. Given a query and product list, return the top 3 products with reasoning. Return JSON array with objects: name, price, rating, reviewCount, reason, id.`,
-      },
-      {
-        role: 'user',
-        content: `Query: ${JSON.stringify(query)}\n\nProducts: ${JSON.stringify(products.slice(0, 20))}\n\nReturn top 3 recommendations.`,
-      },
-    ],
-    response_format: { type: 'json_object' },
-  });
+  try {
+    const completion = await openai.chat.completions.create({
+      model: 'openrouter/free',
+      messages: [
+        {
+          role: 'system',
+          content: `You are a shopping assistant. Given a query and product list, return the top 3 products with reasoning. Return JSON with a "recommendations" array containing objects with fields: id, name, price, rating, reviewCount, reason.`,
+        },
+        {
+          role: 'user',
+          content: `Query: ${JSON.stringify(query)}\n\nProducts: ${JSON.stringify(products.slice(0, 20))}\n\nReturn top 3 recommendations as JSON with "recommendations" array.`,
+        },
+      ],
+      response_format: { type: 'json_object' },
+    });
 
-  const result = JSON.parse(completion.choices[0].message.content || '{}');
-  return result.recommendations || result.products || [];
+    const result = JSON.parse(completion.choices[0].message.content || '{}');
+    const recs = result.recommendations || result.products || [];
+    
+    // Ensure each recommendation has required fields
+    return recs.map((r: any) => ({
+      id: r.id || products[0]?.id || '1',
+      name: r.name || r.product_name || 'Product',
+      price: r.price || 0,
+      rating: r.rating || 0,
+      reviewCount: r.reviewCount || 0,
+      reason: r.reason || r.reasoning || 'Good match for your request',
+    }));
+  } catch (error) {
+    console.error('AI ranking failed:', error);
+    // Return top 3 products as fallback
+    return products.slice(0, 3).map(p => ({
+      id: p.id,
+      name: p.name,
+      price: p.price,
+      rating: p.rating,
+      reviewCount: p.reviewCount,
+      reason: 'Popular choice based on your search',
+    }));
+  }
 }
