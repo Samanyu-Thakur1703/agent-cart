@@ -3,8 +3,19 @@ import { createCheckoutSession } from '@/lib/locus';
 import { checkSpendingLimit, addToDaySpend, addPurchase } from '@/lib/db';
 import { getProductById } from '@/lib/products';
 
+export const dynamic = 'force-dynamic';
+
 export async function POST(request: NextRequest) {
   try {
+    // Check environment variables
+    if (!process.env.LOCUS_API_KEY) {
+      console.error('Missing LOCUS_API_KEY');
+      return NextResponse.json(
+        { error: 'Server configuration error: Missing API credentials' },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
     const { productId, reasoning } = body;
 
@@ -28,18 +39,32 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Locus checkout session
-    const session = await createCheckoutSession(product);
+    let session;
+    try {
+      session = await createCheckoutSession(product);
+    } catch (err: any) {
+      console.error('Locus API error:', err);
+      return NextResponse.json(
+        { error: `Payment provider error: ${err.message}` },
+        { status: 502 }
+      );
+    }
 
     // Record purchase intent in DB
-    addPurchase({
-      product_name: product.name,
-      price: product.price,
-      reasoning: reasoning || 'User approved purchase',
-      session_id: session.id,
-    });
+    try {
+      addPurchase({
+        product_name: product.name,
+        price: product.price,
+        reasoning: reasoning || 'User approved purchase',
+        session_id: session.id,
+      });
 
-    // Update spending tracker
-    addToDaySpend(product.price);
+      // Update spending tracker
+      addToDaySpend(product.price);
+    } catch (dbErr: any) {
+      console.error('DB error:', dbErr);
+      // Continue anyway - the session was created
+    }
 
     return NextResponse.json({
       sessionId: session.id,
