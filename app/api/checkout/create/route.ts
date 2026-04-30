@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   return NextResponse.json({
-    status: 'running-v9',
+    status: 'running-v10',
     timestamp: new Date().toISOString(),
   });
 }
@@ -16,8 +16,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      version: 'v9',
-      productId,
+      version: 'v10',
+      productId: productId || 'none',
       timestamp: new Date().toISOString(),
     });
   } catch (error: any) {
