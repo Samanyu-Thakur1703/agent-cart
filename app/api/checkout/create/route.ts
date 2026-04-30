@@ -8,7 +8,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    console.log('POST V5 called');
+    console.log('POST V5-WITH-BODY called');
     const body = await request.json();
     const { productId } = body;
 
